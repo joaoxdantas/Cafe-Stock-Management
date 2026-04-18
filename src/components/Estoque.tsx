@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAppStore } from '../context/StoreContext';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Search, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Filter, Minus, Zap, Calendar, ChevronUp, ChevronDown, ArrowUpDown } from 'lucide-react';
+import { Plus, Search, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Filter, Minus, Zap, Calendar, ChevronUp, ChevronDown, ArrowUpDown, Download, Upload } from 'lucide-react';
 import { Item, Unit } from '../types';
 import { useTranslation } from '../lib/i18n';
 
 export default function Estoque() {
-  const { items, setItems, suppliers, setTransactions, language } = useAppStore();
+  const { items, setItems, suppliers, setSuppliers, setTransactions, language } = useAppStore();
   const { t } = useTranslation(language);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'LOW'>('ALL');
   const [filterCategory, setFilterCategory] = useState<string>('ALL');
@@ -22,6 +23,9 @@ export default function Estoque() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [sortField, setSortField] = useState<keyof Item | 'supplier'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [importConfirmData, setImportConfirmData] = useState<any | null>(null);
+  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
   // Form states
   const [name, setName] = useState('');
@@ -298,6 +302,61 @@ export default function Estoque() {
     setEditingItemId(null);
   };
 
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  const handleExport = () => {
+    const data = {
+      items,
+      suppliers,
+      exportedAt: new Date().toISOString(),
+      version: '1.0'
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `cafemestre_estoque_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        if (data.items && Array.isArray(data.items)) {
+          setImportConfirmData(data);
+        } else {
+          showNotification(t('importError'), 'error');
+        }
+      } catch (error) {
+        console.error('Import failed:', error);
+        showNotification(t('importError'), 'error');
+      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsText(file);
+  };
+
+  const executeImport = () => {
+    if (!importConfirmData) return;
+    setItems(importConfirmData.items);
+    if (importConfirmData.suppliers && Array.isArray(importConfirmData.suppliers)) {
+      setSuppliers(importConfirmData.suppliers);
+    }
+    showNotification(t('importSuccess'));
+    setImportConfirmData(null);
+  };
+
   const openEditItem = (item: Item) => {
     setEditingItemId(item.id);
     setName(item.name);
@@ -376,7 +435,33 @@ export default function Estoque() {
           <h1 className="text-[28px] font-normal tracking-[-0.5px]">{t('inventory')}</h1>
           <div className="text-[14px] text-cafe-text-dim mt-1">{t('manageSupplies')}</div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <button 
+            onClick={handleExport}
+            className="p-[8px_12px] bg-transparent border border-cafe-border text-cafe-text-dim rounded-[4px] text-[12px] font-semibold cursor-pointer flex items-center gap-2 hover:bg-cafe-bg hover:text-cafe-text transition-all"
+            title={t('exportInventory')}
+          >
+            <Download className="w-4 h-4" />
+            <span className="hidden lg:inline">{t('exportInventory')}</span>
+          </button>
+          
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="p-[8px_12px] bg-transparent border border-cafe-border text-cafe-text-dim rounded-[4px] text-[12px] font-semibold cursor-pointer flex items-center gap-2 hover:bg-cafe-bg hover:text-cafe-text transition-all"
+            title={t('importInventory')}
+          >
+            <Upload className="w-4 h-4" />
+            <span className="hidden lg:inline">{t('importInventory')}</span>
+          </button>
+
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleImport} 
+            accept=".json" 
+            className="hidden" 
+          />
+
           <button 
             onClick={toggleFastMode}
             className={`p-[8px_16px] rounded-[4px] text-[12px] font-semibold cursor-pointer flex items-center gap-2 transition-all ${isFastMode ? 'bg-[#ffeb3b] text-black shadow-[0_0_15px_rgba(255,235,59,0.3)] border-none' : 'bg-transparent border border-cafe-border text-cafe-text-dim hover:bg-cafe-bg hover:text-cafe-text'}`}
@@ -393,6 +478,40 @@ export default function Estoque() {
           </button>
         </div>
       </header>
+
+      {/* Import Confirmation Modal */}
+      {importConfirmData && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[100] backdrop-blur-sm">
+          <div className="bg-cafe-surface border border-cafe-border p-6 rounded-lg max-w-sm w-full shadow-2xl animate-in zoom-in-95">
+            <h3 className="text-lg font-bold mb-3">{t('importInventory')}</h3>
+            <p className="text-sm text-cafe-text-dim mb-6">{t('importReplaceConfirm')}</p>
+            <div className="flex gap-3 justify-end">
+              <button 
+                onClick={() => setImportConfirmData(null)}
+                className="px-4 py-2 text-sm border border-cafe-border rounded hover:bg-cafe-bg"
+              >
+                {t('cancel')}
+              </button>
+              <button 
+                onClick={executeImport}
+                className="px-4 py-2 text-sm bg-cafe-accent text-black font-bold rounded hover:opacity-90"
+              >
+                {t('confirmAdjust')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notifications */}
+      {notification && (
+        <div className={`fixed bottom-8 right-8 z-[100] px-6 py-3 rounded-md shadow-2xl border flex items-center gap-3 animate-in slide-in-from-right-4 transition-all ${
+          notification.type === 'error' ? 'bg-cafe-danger/10 border-cafe-danger text-cafe-danger' : 'bg-cafe-success/10 border-cafe-success text-cafe-success'
+        }`}>
+           <Zap className="w-4 h-4" />
+           <span className="text-sm font-medium">{notification.message}</span>
+        </div>
+      )}
 
       <div className={`border rounded-[12px] flex flex-col overflow-hidden transition-colors duration-300 ${isFastMode ? 'bg-cafe-bg/20 border-[#ffeb3b]/30' : 'bg-cafe-surface border-cafe-border'} min-h-0 min-w-0`}>
         <div className="p-[20px] border-b border-cafe-border flex flex-col lg:flex-row items-start lg:items-center gap-4">
@@ -572,16 +691,36 @@ export default function Estoque() {
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button 
-                          onClick={() => {
-                             if(confirm(t('removeConfirm'))) {
-                               setItems(items.filter(i => i.id !== item.id));
-                             }
-                          }}
-                          className="p-1 text-cafe-text-dim hover:text-cafe-danger hover:bg-cafe-danger/10 rounded-[4px] transition-colors"
-                          title="Remover"
+                          onClick={() => setDeleteConfirmId(item.id)}
+                          className={`p-1 transition-colors rounded-[4px] ${deleteConfirmId === item.id ? 'text-cafe-danger bg-cafe-danger/20' : 'text-cafe-text-dim hover:text-cafe-danger hover:bg-cafe-danger/10'}`}
+                          title={t('remove')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
+                        
+                        {deleteConfirmId === item.id && (
+                          <div className="absolute right-0 top-full mt-1 z-50 bg-cafe-surface border border-cafe-danger/50 p-2 rounded shadow-xl min-w-[120px] animate-in fade-in slide-in-from-top-1">
+                             <p className="text-[10px] text-cafe-text mb-2 text-center">{t('removeConfirm')}</p>
+                             <div className="flex gap-2 justify-center">
+                                <button 
+                                  onClick={() => setDeleteConfirmId(null)}
+                                  className="text-[10px] px-2 py-1 bg-cafe-bg rounded border border-cafe-border hover:bg-cafe-surface"
+                                >
+                                  {t('cancel')}
+                                </button>
+                                <button 
+                                  onClick={() => {
+                                    setItems(prev => prev.filter(i => i.id !== item.id));
+                                    setDeleteConfirmId(null);
+                                    showNotification(t('removeItem'));
+                                  }}
+                                  className="text-[10px] px-2 py-1 bg-cafe-danger text-white rounded hover:opacity-90"
+                                >
+                                  {t('remove')}
+                                </button>
+                             </div>
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>

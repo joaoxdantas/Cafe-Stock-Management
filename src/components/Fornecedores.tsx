@@ -10,6 +10,7 @@ export default function Fornecedores() {
   const { t } = useTranslation(language);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSupplierId, setEditingSupplierId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
   const [categoriesStr, setCategoriesStr] = useState('');
@@ -81,13 +82,37 @@ export default function Fornecedores() {
               <div className="flex-1">
                 <div className="flex justify-between items-start">
                   <h3 className="font-semibold text-cafe-text text-[16px]">{supplier.name}</h3>
-                  <div className="flex gap-2 text-cafe-text-dim">
+                  <div className="flex gap-2 text-cafe-text-dim relative">
                     <button onClick={() => openEditSupplier(supplier)} className="hover:text-cafe-accent transition-colors"><Edit2 className="w-4 h-4" /></button>
-                    <button onClick={() => {
-                      if(confirm(t('removeSupplierConfirm'))) {
-                        setSuppliers(suppliers.filter(s => s.id !== supplier.id))
-                      }
-                    }} className="hover:text-cafe-danger transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    <button 
+                      onClick={() => setDeleteConfirmId(supplier.id)} 
+                      className={`transition-colors ${deleteConfirmId === supplier.id ? 'text-cafe-danger' : 'hover:text-cafe-danger'}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+
+                    {deleteConfirmId === supplier.id && (
+                      <div className="absolute right-0 top-full mt-2 z-50 bg-cafe-surface border border-cafe-danger/50 p-3 rounded shadow-2xl min-w-[160px] animate-in fade-in slide-in-from-top-1">
+                        <p className="text-[11px] text-cafe-text mb-3 text-center font-medium">{t('removeSupplierConfirm')}</p>
+                        <div className="flex gap-2 justify-center">
+                          <button 
+                            onClick={() => setDeleteConfirmId(null)}
+                            className="text-[10px] px-3 py-1.5 bg-cafe-bg rounded border border-cafe-border hover:bg-cafe-surface transition-colors"
+                          >
+                            {t('cancel')}
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setSuppliers(suppliers.filter(s => s.id !== supplier.id));
+                              setDeleteConfirmId(null);
+                            }}
+                            className="text-[10px] px-3 py-1.5 bg-cafe-danger text-white rounded hover:opacity-90 transition-opacity font-bold"
+                          >
+                            {t('remove')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 mt-2 text-[13px] text-cafe-text-dim">

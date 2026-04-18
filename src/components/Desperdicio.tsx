@@ -11,6 +11,7 @@ export default function Desperdicio() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const getTranslatedUnit = (u: string) => {
     switch (u) {
@@ -161,12 +162,36 @@ export default function Desperdicio() {
                     </td>
                     <td className="p-[16px_20px] border-b border-cafe-border text-cafe-danger font-mono font-semibold">-{waste.quantity}</td>
                     <td className="p-[16px_20px] border-b border-cafe-border text-cafe-text-dim">{waste.notes || '-'}</td>
-                    <td className="p-[16px_20px] border-b border-cafe-border text-right text-cafe-text-dim">
-                      <button onClick={() => {
-                        if(confirm(t('removeWasteConfirm'))) {
-                          setTransactions(transactions.filter(t => t.id !== waste.id))
-                        }
-                      }} className="hover:text-cafe-danger transition-colors p-1"><Trash2 className="w-4 h-4" /></button>
+                    <td className="p-[16px_20px] border-b border-cafe-border text-right text-cafe-text-dim relative">
+                      <button 
+                        onClick={() => setDeleteConfirmId(waste.id)} 
+                        className={`transition-colors p-1 rounded ${deleteConfirmId === waste.id ? 'text-cafe-danger bg-cafe-danger/20' : 'hover:text-cafe-danger'}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+
+                      {deleteConfirmId === waste.id && (
+                        <div className="absolute right-0 top-full mt-1 z-50 bg-cafe-surface border border-cafe-danger/50 p-2 rounded shadow-2xl min-w-[140px] animate-in fade-in slide-in-from-top-1 text-center">
+                          <p className="text-[10px] text-cafe-text mb-2">{t('removeWasteConfirm')}</p>
+                          <div className="flex gap-2 justify-center">
+                            <button 
+                              onClick={() => setDeleteConfirmId(null)}
+                              className="text-[9px] px-2 py-1 bg-cafe-bg rounded border border-cafe-border hover:bg-cafe-surface"
+                            >
+                              {t('cancel')}
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setTransactions(transactions.filter(t => t.id !== waste.id));
+                                setDeleteConfirmId(null);
+                              }}
+                              className="text-[9px] px-2 py-1 bg-cafe-danger text-white rounded hover:opacity-90 font-bold"
+                            >
+                              {t('remove')}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

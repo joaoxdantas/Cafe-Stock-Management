@@ -11,6 +11,7 @@ export default function MachineMaintenance() {
   const { maintenanceRecords, setMaintenanceRecords, language } = useAppStore();
   const { t } = useTranslation(language);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const getLocale = () => {
     if (language === 'en-AU') return enAU;
@@ -85,16 +86,37 @@ export default function MachineMaintenance() {
                   </div>
                 </div>
               </div>
-              <button 
-                onClick={() => {
-                  if(confirm(t('removeConfirm'))) {
-                    setMaintenanceRecords(maintenanceRecords.filter(r => r.id !== record.id));
-                  }
-                }} 
-                className="text-cafe-text-dim hover:text-cafe-danger transition-colors p-2"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <div className="relative">
+                <button 
+                  onClick={() => setDeleteConfirmId(record.id)} 
+                  className={`transition-colors p-2 rounded-full ${deleteConfirmId === record.id ? 'text-cafe-danger bg-cafe-danger/20' : 'text-cafe-text-dim hover:text-cafe-danger hover:bg-cafe-danger/10'}`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+
+                {deleteConfirmId === record.id && (
+                  <div className="absolute right-0 top-full mt-2 z-50 bg-cafe-surface border border-cafe-danger/50 p-3 rounded shadow-2xl min-w-[160px] animate-in fade-in slide-in-from-top-1 text-center font-normal">
+                    <p className="text-[11px] text-cafe-text mb-3">{t('removeConfirm')}</p>
+                    <div className="flex gap-2 justify-center">
+                      <button 
+                        onClick={() => setDeleteConfirmId(null)}
+                        className="text-[10px] px-3 py-1.5 bg-cafe-bg rounded border border-cafe-border hover:bg-cafe-surface transition-colors"
+                      >
+                        {t('cancel')}
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setMaintenanceRecords(maintenanceRecords.filter(r => r.id !== record.id));
+                          setDeleteConfirmId(null);
+                        }}
+                        className="text-[10px] px-3 py-1.5 bg-cafe-danger text-white rounded hover:opacity-90 font-bold transition-opacity"
+                      >
+                        {t('remove')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             
             {record.notes && (

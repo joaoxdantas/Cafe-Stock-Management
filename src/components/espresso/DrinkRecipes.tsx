@@ -32,6 +32,7 @@ export default function DrinkRecipes() {
   const { drinkRecipes, setDrinkRecipes, language } = useAppStore();
   const { t } = useTranslation(language);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [expandedRecipe, setExpandedRecipe] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editId, setEditId] = useState<string | null>(null);
@@ -262,96 +263,111 @@ export default function DrinkRecipes() {
 
       {/* Unified Recipe List */}
       <section>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="flex flex-col gap-4">
             {filteredRecipes.length === 0 ? (
-            <div className="col-span-full p-[48px] text-center text-cafe-text-dim bg-cafe-surface rounded-[8px] border border-cafe-border border-dashed">
+            <div className="p-[48px] text-center text-cafe-text-dim bg-cafe-surface rounded-[8px] border border-cafe-border border-dashed">
                 <Coffee className="w-12 h-12 mx-auto mb-4 opacity-20" />
                 <p>{searchTerm ? 'No recipes found for your search.' : t('noRecipes')}</p>
             </div>
             ) : filteredRecipes.map(recipe => (
-            <div key={recipe.id} className="bg-cafe-surface rounded-[8px] border border-cafe-border overflow-hidden flex flex-col h-fit hover:border-cafe-accent transition-colors group">
-                <div className="p-6 flex justify-between items-start">
-                    <button 
-                        onClick={() => setExpandedRecipe(expandedRecipe === recipe.id ? null : recipe.id)}
-                        className="flex-1 text-left flex gap-4"
-                    >
-                        <div className="w-10 h-10 rounded-full bg-cafe-bg flex items-center justify-center shrink-0 border border-cafe-border group-hover:bg-cafe-accent/10 transition-colors">
-                            <Coffee className="w-5 h-5 text-cafe-text group-hover:text-cafe-accent transition-colors" />
+            <div key={recipe.id} className="bg-cafe-surface rounded-[8px] border border-cafe-border overflow-hidden flex flex-col hover:border-cafe-accent transition-colors group">
+                <div className="p-4 sm:p-6 flex flex-col sm:flex-row gap-6 items-start sm:items-center">
+                    {/* Visual Diagram on the side */}
+                    {recipe.layers && (
+                        <div className="shrink-0 p-3 bg-cafe-bg/40 rounded-lg border border-cafe-border/50">
+                            <VisualCupDiagram layers={recipe.layers} small />
                         </div>
-                        <div>
-                            <h3 className="font-semibold text-cafe-text text-[16px] leading-tight">{recipe.name}</h3>
-                            <div className="text-[11px] text-cafe-text-dim mt-1.5 flex items-center gap-1">
-                                <List className="w-3 h-3" />
-                                {recipe.ingredients.length} {t('ingredients')}
+                    )}
+
+                    <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start mb-2">
+                            <h3 className="font-semibold text-cafe-text text-[16px] tracking-tight">{recipe.name}</h3>
+                            <div className="flex items-center gap-1 relative">
+                                <button 
+                                    onClick={() => handleEdit(recipe)} 
+                                    className="text-cafe-text-dim hover:text-cafe-accent transition-colors p-2 rounded-full hover:bg-cafe-accent/10"
+                                    title="Edit"
+                                >
+                                    <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button 
+                                    onClick={() => setDeleteConfirmId(recipe.id)} 
+                                    className={`transition-colors p-2 rounded-full ${deleteConfirmId === recipe.id ? 'text-cafe-danger bg-cafe-danger/20' : 'text-cafe-text-dim hover:text-cafe-danger hover:bg-cafe-danger/10'}`}
+                                    title="Remove"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+
+                                {deleteConfirmId === recipe.id && (
+                                  <div className="absolute right-0 top-full mt-2 z-50 bg-cafe-surface border border-cafe-danger/50 p-3 rounded shadow-2xl min-w-[160px] animate-in fade-in slide-in-from-top-1 text-center">
+                                    <p className="text-[11px] text-cafe-text mb-3 font-medium">{t('removeConfirm')}</p>
+                                    <div className="flex gap-2 justify-center">
+                                      <button 
+                                        onClick={() => setDeleteConfirmId(null)}
+                                        className="text-[10px] px-3 py-1.5 bg-cafe-bg rounded border border-cafe-border hover:bg-cafe-surface transition-colors"
+                                      >
+                                        {t('cancel')}
+                                      </button>
+                                      <button 
+                                        onClick={() => {
+                                          setDrinkRecipes(drinkRecipes.filter(r => r.id !== recipe.id));
+                                          setDeleteConfirmId(null);
+                                        }}
+                                        className="text-[10px] px-3 py-1.5 bg-cafe-danger text-white rounded hover:opacity-90 font-bold transition-opacity"
+                                      >
+                                        {t('remove')}
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+
+                                <button 
+                                    onClick={() => setExpandedRecipe(expandedRecipe === recipe.id ? null : recipe.id)}
+                                    className="text-cafe-text-dim hover:text-cafe-text transition-colors p-2"
+                                >
+                                    {expandedRecipe === recipe.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                </button>
                             </div>
                         </div>
-                    </button>
-                    
-                    <div className="flex items-center gap-1">
-                        <button 
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleEdit(recipe);
-                            }} 
-                            className="text-cafe-text-dim hover:text-cafe-accent transition-colors p-2 rounded-full hover:bg-cafe-accent/10"
-                            title="Edit"
-                        >
-                            <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button 
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if(confirm(t('removeConfirm'))) {
-                                    setDrinkRecipes(drinkRecipes.filter(r => r.id !== recipe.id));
-                                }
-                            }} 
-                            className="text-cafe-text-dim hover:text-cafe-danger transition-colors p-2 rounded-full hover:bg-cafe-danger/10"
-                            title="Remove"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </button>
-                        <button 
-                            onClick={() => setExpandedRecipe(expandedRecipe === recipe.id ? null : recipe.id)}
-                            className="text-cafe-text-dim hover:text-cafe-text transition-colors p-2"
-                        >
-                            {expandedRecipe === recipe.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </button>
+
+                        {/* Summary Details */}
+                        <div className="flex flex-wrap gap-x-4 gap-y-2 text-[14px]">
+                            <div className="text-cafe-text-dim flex items-center gap-1.5">
+                                <List className="w-4 h-4 opacity-70" />
+                                <span className="font-medium text-cafe-text">
+                                    {recipe.ingredients.map(ing => ing.name).join(', ')}
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
                 {expandedRecipe === recipe.id && (
-                <div className="p-6 border-t border-cafe-border bg-cafe-bg/10 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="flex flex-col md:flex-row gap-8">
-                        {recipe.layers && (
-                            <div className="shrink-0 flex flex-col items-center justify-center p-4 bg-cafe-surface rounded-xl border border-cafe-border shadow-sm">
-                                <VisualCupDiagram layers={recipe.layers} />
-                            </div>
-                        )}
-                        <div className="flex-1 space-y-6">
-                            <div>
-                                <h4 className="text-[11px] uppercase tracking-[1px] text-cafe-text-dim mb-3 flex items-center gap-2 font-bold">
-                                    <List className="w-3.5 h-3.5" />
-                                    {t('ingredients')}
-                                </h4>
-                                <ul className="space-y-2">
-                                    {recipe.ingredients.map((ing, idx) => (
-                                    <li key={idx} className="flex justify-between text-[13px] border-b border-cafe-border/30 pb-2 last:border-0 hover:bg-cafe-accent/5 px-2 -mx-2 rounded transition-colors">
-                                        <span className="text-cafe-text">{ing.name}</span>
-                                        <span className="text-cafe-text font-mono font-medium">{ing.quantity}</span>
-                                    </li>
-                                    ))}
-                                </ul>
-                            </div>
+                <div className="px-6 pb-6 border-t border-cafe-border bg-cafe-bg/10 animate-in fade-in slide-in-from-top-2 duration-300 pt-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h4 className="text-[11px] uppercase tracking-[1px] text-cafe-text-dim mb-3 flex items-center gap-2 font-bold">
+                                <List className="w-3.5 h-3.5" />
+                                {t('ingredients')}
+                            </h4>
+                            <ul className="space-y-2">
+                                {recipe.ingredients.map((ing, idx) => (
+                                <li key={idx} className="flex justify-between text-[13px] border-b border-cafe-border/30 pb-2 last:border-0 hover:bg-cafe-accent/5 px-2 -mx-2 rounded transition-colors">
+                                    <span className="text-cafe-text">{ing.name}</span>
+                                    <span className="text-cafe-text font-mono font-medium">{ing.quantity}</span>
+                                </li>
+                                ))}
+                            </ul>
+                        </div>
 
-                            <div>
-                                <h4 className="text-[11px] uppercase tracking-[1px] text-cafe-text-dim mb-3 flex items-center gap-2 font-bold">
-                                    <Info className="w-3.5 h-3.5" />
-                                    {t('method')}
-                                </h4>
-                                <p className="text-[13px] text-cafe-text whitespace-pre-wrap leading-relaxed bg-cafe-surface p-4 rounded-md border border-cafe-border shadow-sm">
-                                    {recipe.method}
-                                </p>
-                            </div>
+                        <div>
+                            <h4 className="text-[11px] uppercase tracking-[1px] text-cafe-text-dim mb-3 flex items-center gap-2 font-bold">
+                                <Info className="w-3.5 h-3.5" />
+                                {t('method')}
+                            </h4>
+                            <p className="text-[13px] text-cafe-text whitespace-pre-wrap leading-relaxed bg-cafe-surface p-4 rounded-md border border-cafe-border shadow-sm">
+                                {recipe.method}
+                            </p>
                         </div>
                     </div>
                 </div>

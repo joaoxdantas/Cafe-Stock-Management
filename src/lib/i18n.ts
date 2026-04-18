@@ -223,6 +223,11 @@ export const translations = {
     copyFrom: 'Copiar de...',
     selectToCopy: 'Selecionar item para copiar instruções',
     copy: 'Copiar',
+    exportInventory: 'Exportar Estoque',
+    importInventory: 'Importar Estoque',
+    importSuccess: 'Estoque importado com sucesso!',
+    importError: 'Erro ao importar arquivo. Verifique se o formato está correto.',
+    importReplaceConfirm: 'Deseja substituir todo o seu estoque atual e fornecedores pelos dados do arquivo?',
   },
   'en-AU': {
     dashboard: 'Dashboard',
@@ -438,6 +443,11 @@ export const translations = {
     copyFrom: 'Copy from...',
     selectToCopy: 'Select item to copy instructions from',
     copy: 'Copy',
+    exportInventory: 'Export Inventory',
+    importInventory: 'Import Inventory',
+    importSuccess: 'Inventory imported successfully!',
+    importError: 'Error importing file. Please check the format.',
+    importReplaceConfirm: 'Do you want to replace all your current inventory and suppliers with the data from the file?',
   },
   'fil': {
     dashboard: 'Dashboard',
@@ -653,6 +663,11 @@ export const translations = {
     copyFrom: 'Kopyahin mula sa...',
     selectToCopy: 'Pumili ng item na pagkukuhanan ng mga tagubilin',
     copy: 'Kopyahin',
+    exportInventory: 'I-export ang Imbentaryo',
+    importInventory: 'I-import ang Imbentaryo',
+    importSuccess: 'Matagumpay na na-import ang imbentaryo!',
+    importError: 'Error sa pag-import ng file. Pakisuri ang format.',
+    importReplaceConfirm: 'Gusto mo bang palitan ang lahat ng iyong kasalukuyang imbentaryo at supplier gamit ang data mula sa file?',
   }
 };
 
