@@ -1,6 +1,6 @@
 {
-  "name": "Remix: CafeMestre",
-  "description": "Sistema simples de gestão de estoque, desperdício e testes de espresso para cafeterias.",
+  "name": "CafeMestre - Gestão de Estoque e Receitas",
+  "description": "Sistema profissional de gestão de estoque, rastreabilidade de lotes, desperdício e calibração de espresso para cafeterias.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }

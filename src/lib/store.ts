@@ -1,67 +1,76 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Item, Supplier, Transaction, EspressoTest, Language, ItemHandling, MaintenanceRecord, DrinkRecipe } from '../types';
 
 export const useStore = () => {
-  const [items, setItems] = useState<Item[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [espressoTests, setEspressoTests] = useState<EspressoTest[]>([]);
-  const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
-  const [drinkRecipes, setDrinkRecipes] = useState<DrinkRecipe[]>([]);
-  const [handlings, setHandlings] = useState<ItemHandling[]>([]);
-  const [language, setLanguage] = useState<Language>('pt-BR');
+  const [items, setItemsState] = useState<Item[]>([]);
+  const [suppliers, setSuppliersState] = useState<Supplier[]>([]);
+  const [transactions, setTransactionsState] = useState<Transaction[]>([]);
+  const [espressoTests, setEspressoTestsState] = useState<EspressoTest[]>([]);
+  const [maintenanceRecords, setMaintenanceRecordsState] = useState<MaintenanceRecord[]>([]);
+  const [drinkRecipes, setDrinkRecipesState] = useState<DrinkRecipe[]>([]);
+  const [handlings, setHandlingsState] = useState<ItemHandling[]>([]);
+  const [language, setLanguageState] = useState<Language>('en-AU');
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const savedItems = localStorage.getItem('cafe_items');
-    const savedSuppliers = localStorage.getItem('cafe_suppliers');
-    const savedTransactions = localStorage.getItem('cafe_transactions');
-    const savedTests = localStorage.getItem('cafe_espresso_tests');
-    const savedMaintenance = localStorage.getItem('cafe_maintenance');
-    const savedRecipes = localStorage.getItem('cafe_recipes');
-    const savedHandlings = localStorage.getItem('cafe_handlings');
     const savedLang = localStorage.getItem('cafe_language') as Language;
+    if (savedLang) setLanguageState(savedLang);
 
-    if (savedItems) setItems(JSON.parse(savedItems));
-    if (savedSuppliers) setSuppliers(JSON.parse(savedSuppliers));
-    if (savedTransactions) setTransactions(JSON.parse(savedTransactions));
-    if (savedTests) setEspressoTests(JSON.parse(savedTests));
-    if (savedMaintenance) setMaintenanceRecords(JSON.parse(savedMaintenance));
-    if (savedRecipes) setDrinkRecipes(JSON.parse(savedRecipes));
-    if (savedHandlings) setHandlings(JSON.parse(savedHandlings));
-    if (savedLang) setLanguage(savedLang);
-    setIsLoaded(true);
+    // Fetch initial data from Express backend
+    fetch('/api/store')
+      .then(res => res.json())
+      .then(data => {
+         if (data.cafe_items) setItemsState(data.cafe_items);
+         if (data.cafe_suppliers) setSuppliersState(data.cafe_suppliers);
+         if (data.cafe_transactions) setTransactionsState(data.cafe_transactions);
+         if (data.cafe_espresso) setEspressoTestsState(data.cafe_espresso);
+         if (data.cafe_maintenance) setMaintenanceRecordsState(data.cafe_maintenance);
+         if (data.cafe_recipes) setDrinkRecipesState(data.cafe_recipes);
+         if (data.cafe_handlings) setHandlingsState(data.cafe_handlings);
+      })
+      .catch(err => console.error("Failed to load initial data", err))
+      .finally(() => setIsLoaded(true));
   }, []);
 
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem('cafe_items', JSON.stringify(items));
-      localStorage.setItem('cafe_suppliers', JSON.stringify(suppliers));
-      localStorage.setItem('cafe_transactions', JSON.stringify(transactions));
-      localStorage.setItem('cafe_espresso_tests', JSON.stringify(espressoTests));
-      localStorage.setItem('cafe_maintenance', JSON.stringify(maintenanceRecords));
-      localStorage.setItem('cafe_recipes', JSON.stringify(drinkRecipes));
-      localStorage.setItem('cafe_handlings', JSON.stringify(handlings));
-      localStorage.setItem('cafe_language', language);
-    }
-  }, [items, suppliers, transactions, espressoTests, handlings, language, isLoaded]);
+  const setLanguage = useCallback((lang: Language) => {
+    setLanguageState(lang);
+    localStorage.setItem('cafe_language', lang);
+  }, []);
+
+  const createSyncSetter = <T,>(key: string, setState: React.Dispatch<React.SetStateAction<T>>) => {
+    return (updater: T | ((prev: T) => T)) => {
+      setState((prev) => {
+        const next = typeof updater === 'function' ? (updater as any)(prev) : updater;
+        
+        // Sync modified data to the Express backend in the background
+        fetch(`/api/store/${key}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(next)
+        }).catch(err => console.error(`Sync failed for ${key}`, err));
+        
+        return next;
+      });
+    };
+  };
+
+  const setItems = useCallback(createSyncSetter('cafe_items', setItemsState), []);
+  const setSuppliers = useCallback(createSyncSetter('cafe_suppliers', setSuppliersState), []);
+  const setTransactions = useCallback(createSyncSetter('cafe_transactions', setTransactionsState), []);
+  const setEspressoTests = useCallback(createSyncSetter('cafe_espresso', setEspressoTestsState), []);
+  const setMaintenanceRecords = useCallback(createSyncSetter('cafe_maintenance', setMaintenanceRecordsState), []);
+  const setDrinkRecipes = useCallback(createSyncSetter('cafe_recipes', setDrinkRecipesState), []);
+  const setHandlings = useCallback(createSyncSetter('cafe_handlings', setHandlingsState), []);
 
   return {
-    items,
-    setItems,
-    suppliers,
-    setSuppliers,
-    transactions,
-    setTransactions,
-    espressoTests,
-    setEspressoTests,
-    maintenanceRecords,
-    setMaintenanceRecords,
-    drinkRecipes,
-    setDrinkRecipes,
-    handlings,
-    setHandlings,
-    language,
-    setLanguage,
+    isLoaded,
+    items, setItems,
+    suppliers, setSuppliers,
+    transactions, setTransactions,
+    espressoTests, setEspressoTests,
+    maintenanceRecords, setMaintenanceRecords,
+    drinkRecipes, setDrinkRecipes,
+    handlings, setHandlings,
+    language, setLanguage,
   };
 };

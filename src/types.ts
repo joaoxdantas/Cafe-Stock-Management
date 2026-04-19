@@ -44,6 +44,7 @@ export interface TestMeasurement {
 }
 
 export interface ItemHandling {
+  id: string;
   itemId: string;
   shelfLife: string;
   temperature: string;

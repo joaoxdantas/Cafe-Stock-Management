@@ -50,6 +50,7 @@ export default function Handling() {
     if (!selectedItemId) return;
 
     const newHandling: ItemHandling = {
+      id: selectedItemId,
       itemId: selectedItemId,
       shelfLife,
       temperature,

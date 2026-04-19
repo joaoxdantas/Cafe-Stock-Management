@@ -191,6 +191,12 @@ export const translations = {
     transactionIn: 'Entrada',
     transactionOut: 'Saída',
     transactionWaste: 'Perda',
+    avgPerDay: 'Média',
+    avgPerDaySuffix: '/dia',
+    inSelectedPeriod: 'No período selecionado',
+    activeItemsNow: 'Itens ativos agora',
+    printHintTitle: 'Dica para Impressão:',
+    printHintDesc: 'Se a janela de impressão não abrir, tente clicar no ícone "New Tab" no canto superior direito.',
 
     // Sidebar
     cafeMaster: 'CafeMestre',
@@ -412,6 +418,12 @@ export const translations = {
     transactionIn: 'In',
     transactionOut: 'Out',
     transactionWaste: 'Waste',
+    avgPerDay: 'Average',
+    avgPerDaySuffix: '/day',
+    inSelectedPeriod: 'In selected period',
+    activeItemsNow: 'Active items now',
+    printHintTitle: 'Print Hint:',
+    printHintDesc: 'If the print dialog does not open, try clicking the "New Tab" icon in the top right to open the app outside the preview.',
 
     cafeMaster: 'CafeMaster',
     language: 'Language',
@@ -632,6 +644,12 @@ export const translations = {
     transactionIn: 'Pasok',
     transactionOut: 'Labas',
     transactionWaste: 'Aksaya',
+    avgPerDay: 'Average',
+    avgPerDaySuffix: '/araw',
+    inSelectedPeriod: 'Sa napiling panahon',
+    activeItemsNow: 'Mga aktibong item ngayon',
+    printHintTitle: 'Tip sa Pag-print:',
+    printHintDesc: 'Kung hindi magbukas ang print dialog, i-click ang icon na "New Tab" sa itaas na kanang bahagi.',
 
     cafeMaster: 'CafeMaster',
     language: 'Wika',

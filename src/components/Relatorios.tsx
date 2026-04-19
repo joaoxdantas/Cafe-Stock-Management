@@ -162,8 +162,8 @@ export default function Relatorios() {
         <div className="bg-blue-500/10 border border-blue-500/30 text-blue-200 p-4 rounded-[8px] flex items-start gap-3 animate-in fade-in slide-in-from-top-2 no-print">
           <Info className="w-5 h-5 shrink-0 mt-0.5" />
           <div className="text-[13px]">
-            <p className="font-semibold mb-1">Dica para Impressão:</p>
-            <p>Se a janela de impressão não abrir, tente clicar no ícone <strong>"New Tab"</strong> no canto superior direito para abrir o CafeMestre em uma nova janela fora do preview.</p>
+            <p className="font-semibold mb-1">{t('printHintTitle')}</p>
+            <p>{t('printHintDesc')}</p>
           </div>
         </div>
       )}
@@ -179,22 +179,22 @@ export default function Relatorios() {
         <div className="bg-cafe-surface p-[24px] rounded-[8px] border border-cafe-border printable-card">
           <div className="text-[11px] uppercase tracking-[1.5px] text-cafe-text-dim mb-2">{t('transactionWaste')}</div>
           <div className="text-[28px] font-mono text-cafe-text mb-2">{metrics.wasteCount}</div>
-          <div className="text-[12px] text-cafe-text-dim">Média {metrics.avgDailyWaste}/dia</div>
+          <div className="text-[12px] text-cafe-text-dim">{t('avgPerDay')} {metrics.avgDailyWaste}{t('avgPerDaySuffix')}</div>
         </div>
         <div className="bg-cafe-surface p-[24px] rounded-[8px] border border-cafe-border printable-card">
           <div className="text-[11px] uppercase tracking-[1.5px] text-cafe-text-dim mb-2">{t('transactionIn')}</div>
           <div className="text-[28px] font-mono text-cafe-text mb-2">{metrics.inCount}</div>
-          <div className="text-[12px] text-cafe-text-dim">No período selecionado</div>
+          <div className="text-[12px] text-cafe-text-dim">{t('inSelectedPeriod')}</div>
         </div>
         <div className="bg-cafe-surface p-[24px] rounded-[8px] border border-cafe-border printable-card">
           <div className="text-[11px] uppercase tracking-[1.5px] text-cafe-text-dim mb-2">{t('transactionOut')}</div>
           <div className="text-[28px] font-mono text-cafe-text mb-2">{metrics.outCount}</div>
-          <div className="text-[12px] text-cafe-text-dim">No período selecionado</div>
+          <div className="text-[12px] text-cafe-text-dim">{t('inSelectedPeriod')}</div>
         </div>
         <div className="bg-cafe-surface p-[24px] rounded-[8px] border border-cafe-border printable-card">
           <div className="text-[11px] uppercase tracking-[1.5px] text-cafe-text-dim mb-2">{t('currentQty')}</div>
           <div className="text-[28px] font-mono text-cafe-accent mb-2">{metrics.totalItemsInStock}</div>
-          <div className="text-[12px] text-cafe-text-dim">Itens ativos agora</div>
+          <div className="text-[12px] text-cafe-text-dim">{t('activeItemsNow')}</div>
         </div>
       </div>
 

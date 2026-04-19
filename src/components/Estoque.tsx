@@ -6,7 +6,7 @@ import { Item, Unit } from '../types';
 import { useTranslation } from '../lib/i18n';
 
 export default function Estoque() {
-  const { items, setItems, suppliers, setSuppliers, setTransactions, language } = useAppStore();
+  const { items, setItems, suppliers, setSuppliers, setTransactions, handlings, setHandlings, language } = useAppStore();
   const { t } = useTranslation(language);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -311,6 +311,7 @@ export default function Estoque() {
     const data = {
       items,
       suppliers,
+      handlings,
       exportedAt: new Date().toISOString(),
       version: '1.0'
     };
@@ -352,6 +353,9 @@ export default function Estoque() {
     setItems(importConfirmData.items);
     if (importConfirmData.suppliers && Array.isArray(importConfirmData.suppliers)) {
       setSuppliers(importConfirmData.suppliers);
+    }
+    if (importConfirmData.handlings && Array.isArray(importConfirmData.handlings)) {
+      setHandlings(importConfirmData.handlings);
     }
     showNotification(t('importSuccess'));
     setImportConfirmData(null);
@@ -441,7 +445,7 @@ export default function Estoque() {
             className="p-[8px_12px] bg-transparent border border-cafe-border text-cafe-text-dim rounded-[4px] text-[12px] font-semibold cursor-pointer flex items-center gap-2 hover:bg-cafe-bg hover:text-cafe-text transition-all"
             title={t('exportInventory')}
           >
-            <Download className="w-4 h-4" />
+            <Upload className="w-4 h-4" />
             <span className="hidden lg:inline">{t('exportInventory')}</span>
           </button>
           
@@ -450,7 +454,7 @@ export default function Estoque() {
             className="p-[8px_12px] bg-transparent border border-cafe-border text-cafe-text-dim rounded-[4px] text-[12px] font-semibold cursor-pointer flex items-center gap-2 hover:bg-cafe-bg hover:text-cafe-text transition-all"
             title={t('importInventory')}
           >
-            <Upload className="w-4 h-4" />
+            <Download className="w-4 h-4" />
             <span className="hidden lg:inline">{t('importInventory')}</span>
           </button>
 

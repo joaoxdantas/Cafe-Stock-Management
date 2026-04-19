@@ -15,7 +15,7 @@ import { Language } from './types';
 type Tab = 'dashboard' | 'estoque' | 'fornecedores' | 'desperdicio' | 'espresso' | 'relatorios' | 'handling' | 'recipes';
 
 function MainApp() {
-  const { language, setLanguage } = useAppStore();
+  const { language, setLanguage, isLoaded } = useAppStore();
   const { t } = useTranslation(language);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -23,13 +23,24 @@ function MainApp() {
   const tabs = [
     { id: 'dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { id: 'estoque', label: t('inventory'), icon: Package },
+    { id: 'handling', label: t('handling'), icon: Thermometer },
     { id: 'fornecedores', label: t('suppliers'), icon: Truck },
     { id: 'desperdicio', label: t('waste'), icon: Trash2 },
     { id: 'espresso', label: t('espressoTest'), icon: Coffee },
     { id: 'recipes', label: t('recipes'), icon: Menu },
-    { id: 'handling', label: t('handling'), icon: Thermometer },
     { id: 'relatorios', label: t('reports'), icon: BarChart },
   ] as const;
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-cafe-bg flex items-center justify-center font-sans text-cafe-text">
+        <div className="flex flex-col items-center gap-4">
+          <Coffee className="w-12 h-12 text-cafe-accent animate-pulse" />
+          <span className="text-cafe-text-dim text-sm uppercase tracking-wider font-semibold">Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-cafe-bg flex flex-col md:flex-row font-sans text-cafe-text">
@@ -80,7 +91,7 @@ function MainApp() {
           <select 
             value={language}
             onChange={(e) => setLanguage(e.target.value as Language)}
-            className="w-full bg-cafe-bg border border-cafe-border rounded-[4px] p-[8px_12px] text-cafe-text text-[13px] outline-none focus:border-cafe-accent"
+            className="w-full bg-cafe-bg border border-cafe-border rounded-[4px] p-[8px_12px] text-cafe-text text-[13px] outline-none focus:border-cafe-accent mb-4"
           >
             <option value="pt-BR">Português (BR)</option>
             <option value="en-AU">English (AU)</option>
