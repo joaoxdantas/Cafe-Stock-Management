@@ -17,6 +17,14 @@ export const useStore = () => {
   const [user, setUser] = useState<User | null>(null);
 
   const [syncError, setSyncError] = useState<string>('');
+  const [showImages, setShowImagesState] = useState<boolean>(() => {
+    return localStorage.getItem('cafe_show_images') !== 'false'; // default true
+  });
+
+  const setShowImages = useCallback((val: boolean) => {
+    setShowImagesState(val);
+    localStorage.setItem('cafe_show_images', val ? 'true' : 'false');
+  }, []);
 
   useEffect(() => {
     const handleSyncError = (e: any) => setSyncError(e.detail || 'Failed to sync to cloud.');
@@ -137,6 +145,7 @@ export const useStore = () => {
     isLoaded,
     user,
     syncError,
+    showImages, setShowImages,
     items, setItems,
     suppliers, setSuppliers,
     transactions, setTransactions,

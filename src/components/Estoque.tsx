@@ -1,12 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { useAppStore } from '../context/StoreContext';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Search, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Filter, Minus, Zap, Calendar, ChevronUp, ChevronDown, ArrowUpDown, Download, Upload } from 'lucide-react';
+import { Plus, Search, ArrowUpRight, ArrowDownRight, Edit2, Trash2, Filter, Minus, Zap, Calendar, ChevronUp, ChevronDown, ArrowUpDown, Download, Upload, Image as ImageIcon, Camera } from 'lucide-react';
 import { Item, Unit } from '../types';
 import { useTranslation } from '../lib/i18n';
+import { compressImage } from '../lib/imageUtils';
+import ImageModal from './ImageModal';
 
 export default function Estoque() {
-  const { items, setItems, suppliers, setSuppliers, setTransactions, handlings, setHandlings, language } = useAppStore();
+  const { items, setItems, suppliers, setSuppliers, setTransactions, handlings, setHandlings, language, showImages, setShowImages } = useAppStore();
   const { t } = useTranslation(language);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -36,6 +38,8 @@ export default function Estoque() {
   const [supplierId, setSupplierId] = useState('');
   const [bestBefore, setBestBefore] = useState('');
   const [batch, setBatch] = useState('');
+  const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
+  const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
 
   // Adjust form states
   const [adjustType, setAdjustType] = useState<'IN' | 'OUT'>('IN');
@@ -152,6 +156,7 @@ export default function Estoque() {
         supplierId: supplierId || undefined,
         bestBefore: bestBefore || undefined,
         batch: batch || undefined,
+        imageUrl: imageUrl || undefined,
       } : i));
     } else {
       const newItem: Item = {
@@ -165,6 +170,7 @@ export default function Estoque() {
         supplierId: supplierId || undefined,
         bestBefore: bestBefore || undefined,
         batch: batch || undefined,
+        imageUrl: imageUrl || undefined,
       };
       setItems([...items, newItem]);
       
@@ -299,7 +305,20 @@ export default function Estoque() {
     setSupplierId('');
     setBestBefore('');
     setBatch('');
+    setImageUrl(undefined);
     setEditingItemId(null);
+  };
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const compressedBase64 = await compressImage(file);
+        setImageUrl(compressedBase64);
+      } catch (err) {
+        showNotification(t('error') || 'Error compressing image', 'error');
+      }
+    }
   };
 
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
@@ -371,6 +390,7 @@ export default function Estoque() {
     setSupplierId(item.supplierId || '');
     setBestBefore(item.bestBefore || '');
     setBatch(item.batch || '');
+    setImageUrl(item.imageUrl || undefined);
     setIsModalOpen(true);
   };
 
@@ -466,6 +486,14 @@ export default function Estoque() {
             className="hidden" 
           />
 
+          <button 
+            onClick={() => setShowImages(!showImages)}
+            className={`p-[8px_16px] rounded-[4px] text-[12px] font-semibold cursor-pointer flex items-center gap-2 transition-all ${showImages ? 'bg-cafe-bg text-cafe-text shadow-[inset_0_1px_3px_rgba(0,0,0,0.2)] border-none' : 'bg-transparent border border-cafe-border text-cafe-text-dim hover:bg-cafe-bg hover:text-cafe-text'}`}
+            title="Toggle Images"
+          >
+            <ImageIcon className={`w-4 h-4 ${showImages ? 'text-cafe-text' : ''}`} />
+            <span className="hidden sm:inline">Images</span>
+          </button>
           <button 
             onClick={toggleFastMode}
             className={`p-[8px_16px] rounded-[4px] text-[12px] font-semibold cursor-pointer flex items-center gap-2 transition-all ${isFastMode ? 'bg-[#ffeb3b] text-black shadow-[0_0_15px_rgba(255,235,59,0.3)] border-none' : 'bg-transparent border border-cafe-border text-cafe-text-dim hover:bg-cafe-bg hover:text-cafe-text'}`}
@@ -568,6 +596,7 @@ export default function Estoque() {
           <table className="w-full text-left border-collapse text-[13px]">
             <thead>
               <tr>
+                {showImages && <th className="p-[12px_12px] text-cafe-text-dim font-normal border-b border-cafe-border w-[50px]">IMG</th>}
                 <th 
                   className="p-[12px_20px] text-cafe-text-dim font-normal border-b border-cafe-border cursor-pointer hover:text-cafe-text transition-colors"
                   onClick={() => handleSort('name')}
@@ -620,6 +649,22 @@ export default function Estoque() {
                 const isLow = item.quantity <= item.minStock;
                 return (
                   <tr key={item.id} className="hover:bg-cafe-bg/50 transition-colors">
+                    {showImages && (
+                      <td className="p-[12px] border-b border-cafe-border align-middle">
+                        {item.imageUrl ? (
+                          <img 
+                            src={item.imageUrl} 
+                            alt={item.name} 
+                            className="w-10 h-10 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => setEnlargedImage(item.imageUrl!)}
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-cafe-surface border border-cafe-border rounded flex items-center justify-center">
+                            <ImageIcon className="w-4 h-4 text-cafe-text-dim/30" />
+                          </div>
+                        )}
+                      </td>
+                    )}
                     <td className="p-[16px_20px] border-b border-cafe-border">
                       <div className="font-medium text-cafe-text">{item.name}</div>
                       {(item.batch || item.bestBefore) && (
@@ -749,8 +794,8 @@ export default function Estoque() {
             )}
             <h2 className="text-[18px] mb-[20px] tracking-[-0.5px]">{editingItemId ? t('editItem') : t('addItem')}</h2>
             <form onSubmit={handleSaveItem} className="space-y-[16px]">
-              <div className="flex flex-col sm:flex-row gap-[16px]">
-                <div className="flex-1">
+              <div className="flex flex-col sm:flex-row gap-[16px] items-end">
+                <div className="flex-1 w-full">
                   <label className="block text-[12px] uppercase text-cafe-text-dim mb-[8px] tracking-[1px]">{t('itemName')}</label>
                   <input required type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-cafe-bg border border-cafe-border rounded-[4px] p-[10px_12px] text-cafe-text text-[13px] outline-none focus:border-cafe-accent" />
                 </div>
@@ -764,6 +809,17 @@ export default function Estoque() {
                     <option value="ml">{t('unitML')}</option>
                     <option value="caixa">{t('unitCaixa')}</option>
                   </select>
+                </div>
+                <div className="flex flex-col items-center shrink-0">
+                  <label className="block text-[12px] uppercase text-cafe-text-dim mb-[8px] tracking-[1px] w-full text-center">Img</label>
+                  <label className="relative flex items-center justify-center w-[41px] h-[41px] rounded-[4px] border border-cafe-border bg-cafe-bg cursor-pointer hover:border-cafe-accent overflow-hidden group">
+                     {imageUrl ? (
+                       <img src={imageUrl} className="w-full h-full object-cover" />
+                     ) : (
+                       <Camera className="w-5 h-5 text-cafe-text-dim group-hover:text-cafe-accent" />
+                     )}
+                     <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageChange} />
+                  </label>
                 </div>
               </div>
 
@@ -855,6 +911,8 @@ export default function Estoque() {
           </div>
         </div>
       )}
+
+      {enlargedImage && <ImageModal src={enlargedImage} onClose={() => setEnlargedImage(null)} />}
 
       {/* Modal Adjust Stock */}
       {isAdjustModalOpen && adjustItem && (

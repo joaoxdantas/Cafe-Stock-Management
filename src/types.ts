@@ -20,6 +20,7 @@ export interface Item {
   supplierId?: string;
   bestBefore?: string;
   batch?: string;
+  imageUrl?: string;
 }
 
 export type TransactionType = 'IN' | 'OUT' | 'WASTE';

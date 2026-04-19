@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../context/StoreContext';
 import { useTranslation } from '../lib/i18n';
-import { Search, Thermometer, Info, Edit2, Save, Copy } from 'lucide-react';
+import { Search, Thermometer, Info, Edit2, Save, Copy, Image as ImageIcon } from 'lucide-react';
 import { ItemHandling } from '../types';
+import ImageModal from './ImageModal';
 
 export default function Handling() {
-  const { items, handlings, setHandlings, language } = useAppStore();
+  const { items, handlings, setHandlings, language, showImages, setShowImages } = useAppStore();
   const { t } = useTranslation(language);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [copySourceId, setCopySourceId] = useState('');
+  const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
   
   const [isEditing, setIsEditing] = useState(false);
 
@@ -92,15 +94,24 @@ export default function Handling() {
           <div className="text-[14px] text-cafe-text-dim mt-1">{t('handlingDesc')}</div>
         </header>
 
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-cafe-text-dim" />
-          <input 
-            type="text" 
-            placeholder={t('searchItems')}
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="w-full bg-cafe-surface border border-cafe-border rounded-[8px] pl-10 pr-4 py-2.5 text-[13px] outline-none focus:border-cafe-accent text-cafe-text"
-          />
+        <div className="relative flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-cafe-text-dim" />
+            <input 
+              type="text" 
+              placeholder={t('searchItems')}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full bg-cafe-surface border border-cafe-border rounded-[8px] pl-10 pr-4 py-2.5 text-[13px] outline-none focus:border-cafe-accent text-cafe-text"
+            />
+          </div>
+          <button 
+            onClick={() => setShowImages(!showImages)}
+            className={`p-[9px] rounded-[8px] flex items-center justify-center shrink-0 border transition-all ${showImages ? 'bg-cafe-bg text-cafe-text border-transparent shadow-inner' : 'bg-transparent border-cafe-border text-cafe-text-dim hover:bg-cafe-surface'}`}
+            title="Toggle Images"
+          >
+            <ImageIcon className="w-[18px] h-[18px]" />
+          </button>
         </div>
 
         <div className="bg-cafe-surface border border-cafe-border rounded-[8px] overflow-hidden flex flex-col h-[600px]">
@@ -114,15 +125,34 @@ export default function Handling() {
                   <button
                     key={item.id}
                     onClick={() => handleSelectItem(item.id)}
-                    className={`w-full text-left p-4 border-b border-cafe-border transition-colors hover:bg-cafe-bg/50 ${selectedItemId === item.id ? 'bg-cafe-bg' : ''}`}
+                    className={`w-full text-left p-4 border-b border-cafe-border transition-colors hover:bg-cafe-bg/50 flex gap-3 ${selectedItemId === item.id ? 'bg-cafe-bg' : ''}`}
                   >
-                    <div className="flex justify-between items-start">
+                    {showImages && (
+                      <div className="shrink-0 flex items-center">
+                        {item.imageUrl ? (
+                          <img 
+                            src={item.imageUrl} 
+                            alt={item.name} 
+                            className="w-10 h-10 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEnlargedImage(item.imageUrl!);
+                            }}
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-cafe-surface border border-cafe-border rounded flex items-center justify-center">
+                            <ImageIcon className="w-4 h-4 text-cafe-text-dim/30" />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="flex-1 flex justify-between items-start">
                       <div>
                         <div className={`font-medium ${selectedItemId === item.id ? 'text-cafe-accent' : 'text-cafe-text'}`}>{item.name}</div>
                         <div className="text-[11px] text-cafe-text-dim mt-0.5">{item.categoryName}</div>
                       </div>
                       {hasHandling && (
-                        <span className="w-2 h-2 rounded-full bg-cafe-success mt-1.5" />
+                        <span className="w-2 h-2 rounded-full bg-cafe-success mt-1.5 shrink-0" />
                       )}
                     </div>
                   </button>
@@ -305,6 +335,7 @@ export default function Handling() {
           </div>
         )}
       </div>
+      {enlargedImage && <ImageModal src={enlargedImage} onClose={() => setEnlargedImage(null)} />}
     </div>
   );
 }
