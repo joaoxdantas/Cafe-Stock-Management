@@ -8,10 +8,9 @@ import { compressImage } from '../lib/imageUtils';
 import ImageModal from './ImageModal';
 
 export default function Estoque() {
-  const { items, setItems, suppliers, setSuppliers, setTransactions, handlings, setHandlings, language, showImages, setShowImages } = useAppStore();
+  const { items, setItems, suppliers, setSuppliers, setTransactions, handlings, setHandlings, language, showImages, setShowImages, inventorySearchTerm: searchTerm, setInventorySearchTerm: setSearchTerm } = useAppStore();
   const { t } = useTranslation(language);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'LOW'>('ALL');
   const [filterCategory, setFilterCategory] = useState<string>('ALL');
   const [filterSupplier, setFilterSupplier] = useState<string>('ALL');

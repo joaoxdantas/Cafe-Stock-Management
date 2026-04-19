@@ -234,6 +234,8 @@ export const translations = {
     importSuccess: 'Estoque importado com sucesso!',
     importError: 'Erro ao importar arquivo. Verifique se o formato está correto.',
     importReplaceConfirm: 'Deseja substituir todo o seu estoque atual e fornecedores pelos dados do arquivo?',
+    error: 'Erro',
+    success: 'Sucesso',
   },
   'en-AU': {
     dashboard: 'Dashboard',
@@ -460,6 +462,8 @@ export const translations = {
     importSuccess: 'Inventory imported successfully!',
     importError: 'Error importing file. Please check the format.',
     importReplaceConfirm: 'Do you want to replace all your current inventory and suppliers with the data from the file?',
+    error: 'Error',
+    success: 'Success',
   },
   'fil': {
     dashboard: 'Dashboard',
@@ -686,6 +690,8 @@ export const translations = {
     importSuccess: 'Matagumpay na na-import ang imbentaryo!',
     importError: 'Error sa pag-import ng file. Pakisuri ang format.',
     importReplaceConfirm: 'Gusto mo bang palitan ang lahat ng iyong kasalukuyang imbentaryo at supplier gamit ang data mula sa file?',
+    error: 'Error',
+    success: 'Tagumpay',
   }
 };
 

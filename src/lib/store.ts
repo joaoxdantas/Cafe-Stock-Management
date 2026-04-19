@@ -1,8 +1,25 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Dispatch, SetStateAction } from 'react';
 import { collection, onSnapshot, writeBatch, doc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { Item, Supplier, Transaction, EspressoTest, Language, ItemHandling, MaintenanceRecord, DrinkRecipe } from '../types';
+import { Item, Supplier, Transaction, EspressoTest, Language, ItemHandling, MaintenanceRecord, DrinkRecipe, Tab } from '../types';
+
+// Helper to remove undefined values from objects recursively for Firestore
+function sanitizeForFirestore(data: any): any {
+  if (data === null || data === undefined) return null;
+  if (Array.isArray(data)) return data.map(sanitizeForFirestore);
+  if (typeof data === 'object') {
+    const sanitized: any = {};
+    Object.keys(data).forEach(key => {
+      const value = data[key];
+      if (value !== undefined) {
+        sanitized[key] = sanitizeForFirestore(value);
+      }
+    });
+    return sanitized;
+  }
+  return data;
+}
 
 export const useStore = () => {
   const [items, setItemsState] = useState<Item[]>([]);
@@ -20,6 +37,8 @@ export const useStore = () => {
   const [showImages, setShowImagesState] = useState<boolean>(() => {
     return localStorage.getItem('cafe_show_images') !== 'false'; // default true
   });
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [inventorySearchTerm, setInventorySearchTerm] = useState('');
 
   const setShowImages = useCallback((val: boolean) => {
     setShowImagesState(val);
@@ -81,7 +100,7 @@ export const useStore = () => {
     localStorage.setItem('cafe_language', lang);
   }, []);
 
-  const createFirebaseSetter = useCallback(<T extends { id: string }>(subCollection: string, setState: React.Dispatch<React.SetStateAction<T[]>>) => {
+  const createFirebaseSetter = useCallback(<T extends { id: string }>(subCollection: string, setState: Dispatch<SetStateAction<T[]>>) => {
     return (updater: T[] | ((prev: T[]) => T[])) => {
       setState((prev) => {
         const next = typeof updater === 'function' ? (updater as any)(prev) : updater;
@@ -103,7 +122,11 @@ export const useStore = () => {
               for (let i = 0; i < toDelete.length; i += MAX_BATCH_SIZE) {
                 const chunk = toDelete.slice(i, i + MAX_BATCH_SIZE);
                 const batch = writeBatch(db);
-                chunk.forEach(id => batch.delete(doc(ref, id)));
+                chunk.forEach(id => {
+                  if (typeof id === 'string') {
+                    batch.delete(doc(db, 'users', user.uid!, subCollection, id));
+                  }
+                });
                 await batch.commit();
               }
               
@@ -111,7 +134,7 @@ export const useStore = () => {
               for (let i = 0; i < toSet.length; i += MAX_BATCH_SIZE) {
                 const chunk = toSet.slice(i, i + MAX_BATCH_SIZE);
                 const batch = writeBatch(db);
-                chunk.forEach(item => batch.set(doc(ref, item.id), item));
+                chunk.forEach((item: T) => batch.set(doc(db, 'users', user.uid!, subCollection, item.id), sanitizeForFirestore(item)));
                 await batch.commit();
               }
             } catch (err: any) {
@@ -154,5 +177,7 @@ export const useStore = () => {
     drinkRecipes, setDrinkRecipes,
     handlings, setHandlings,
     language, setLanguage,
+    activeTab, setActiveTab,
+    inventorySearchTerm, setInventorySearchTerm,
   };
 };

@@ -13,12 +13,9 @@ import { useTranslation } from './lib/i18n';
 import { Language } from './types';
 import { signInWithGoogle, logout } from './lib/firebase';
 
-type Tab = 'dashboard' | 'estoque' | 'fornecedores' | 'desperdicio' | 'espresso' | 'relatorios' | 'handling' | 'recipes';
-
 function MainApp() {
-  const { language, setLanguage, isLoaded, user, syncError } = useAppStore();
+  const { language, setLanguage, isLoaded, user, syncError, activeTab, setActiveTab } = useAppStore();
   const { t } = useTranslation(language);
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [loginError, setLoginError] = useState<string>('');
 

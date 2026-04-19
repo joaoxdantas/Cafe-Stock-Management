@@ -2,6 +2,8 @@ export type Unit = 'kg' | 'g' | 'L' | 'ml' | 'unidade' | 'caixa';
 
 export type Language = 'pt-BR' | 'en-AU' | 'fil';
 
+export type Tab = 'dashboard' | 'estoque' | 'fornecedores' | 'desperdicio' | 'espresso' | 'relatorios' | 'handling' | 'recipes';
+
 export interface Supplier {
   id: string;
   name: string;

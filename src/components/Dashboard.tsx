@@ -1,13 +1,18 @@
 import React from 'react';
 import { useAppStore } from '../context/StoreContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Package, AlertTriangle, Trash2, Clock } from 'lucide-react';
+import { Package, AlertTriangle, Trash2, Clock, ArrowRight } from 'lucide-react';
 import { useTranslation } from '../lib/i18n';
 import { differenceInDays, parse, startOfDay } from 'date-fns';
 
 export default function Dashboard() {
-  const { items, transactions, espressoTests, language } = useAppStore();
+  const { items, transactions, espressoTests, language, setActiveTab, setInventorySearchTerm } = useAppStore();
   const { t } = useTranslation(language);
+
+  const handleItemClick = (itemName: string) => {
+    setInventorySearchTerm(itemName);
+    setActiveTab('estoque');
+  };
 
   const lowStockItems = items.filter(i => i.quantity <= i.minStock);
   const totalItems = items.length;
@@ -97,19 +102,26 @@ export default function Dashboard() {
           </div>
           <div className="p-[12px_20px] space-y-3">
             {expiringItems.map(item => (
-              <div key={item.id} className="flex items-center justify-between py-2 border-b border-cafe-border last:border-0">
+              <div 
+                key={item.id} 
+                onClick={() => handleItemClick(item.name)}
+                className="group flex items-center justify-between py-2 border-b border-cafe-border last:border-0 cursor-pointer hover:bg-cafe-bg/50 transition-colors rounded px-2 -mx-2"
+              >
                 <div className="flex flex-col">
-                  <span className="text-[14px] font-medium">{item.name}</span>
+                  <span className="text-[14px] font-medium group-hover:text-cafe-accent transition-colors">{item.name}</span>
                   <span className="text-[11px] text-cafe-text-dim">{t('batchLabel')}: {item.batch || 'N/A'} • {t('bestBeforeLabel')}: {item.bestBefore}</span>
                 </div>
-                <div className={`text-[12px] font-bold px-3 py-1 rounded-full ${
-                  item.daysLeft <= 1 ? 'bg-cafe-danger/20 text-cafe-danger border border-cafe-danger/30' :
-                  'bg-[#ffeb3b]/10 text-[#ffeb3b] border border-[#ffeb3b]/20'
-                }`}>
-                  {item.daysLeft < 0 ? t('expired') : 
-                   item.daysLeft === 0 ? t('today') :
-                   item.daysLeft === 1 ? t('tomorrow') :
-                   `${t('expiresIn')} ${item.daysLeft} ${t('days')}`}
+                <div className="flex items-center gap-3">
+                  <div className={`text-[12px] font-bold px-3 py-1 rounded-full ${
+                    item.daysLeft <= 1 ? 'bg-cafe-danger/20 text-cafe-danger border border-cafe-danger/30' :
+                    'bg-[#ffeb3b]/10 text-[#ffeb3b] border border-[#ffeb3b]/20'
+                  }`}>
+                    {item.daysLeft < 0 ? t('expired') : 
+                     item.daysLeft === 0 ? t('today') :
+                     item.daysLeft === 1 ? t('tomorrow') :
+                     `${t('expiresIn')} ${item.daysLeft} ${t('days')}`}
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-cafe-text-dim opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               </div>
             ))}
@@ -135,13 +147,18 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {lowStockItems.slice(0, 5).map(item => (
-                  <tr key={item.id}>
-                    <td className="p-[16px_20px] border-b border-cafe-border">{item.name}</td>
+                  <tr 
+                    key={item.id}
+                    onClick={() => handleItemClick(item.name)}
+                    className="group cursor-pointer hover:bg-cafe-bg/50 transition-colors"
+                  >
+                    <td className="p-[16px_20px] border-b border-cafe-border group-hover:text-cafe-accent transition-colors">{item.name}</td>
                     <td className="p-[16px_20px] border-b border-cafe-border">
                       <span className="p-[2px_8px] rounded-[4px] text-[11px] bg-[#333]">{item.categoryName}</span>
                     </td>
-                    <td className="p-[16px_20px] border-b border-cafe-border font-mono text-cafe-danger">
-                      {item.quantity} {item.unit}
+                    <td className="p-[16px_20px] border-b border-cafe-border font-mono text-cafe-danger flex items-center justify-between">
+                      <span>{item.quantity} {item.unit}</span>
+                      <ArrowRight className="w-4 h-4 text-cafe-text-dim opacity-0 group-hover:opacity-100 transition-opacity" />
                     </td>
                   </tr>
                 ))}
