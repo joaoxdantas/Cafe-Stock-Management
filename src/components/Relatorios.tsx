@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { useAppStore } from '../context/StoreContext';
 import { format, startOfMonth, subMonths, isToday, isWithinInterval, startOfDay, endOfDay, parseISO, differenceInDays } from 'date-fns';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, Legend } from 'recharts';
 import { useTranslation } from '../lib/i18n';
-import { Printer, Calendar as CalendarIcon, FileSpreadsheet, Info } from 'lucide-react';
+import { Download, Calendar as CalendarIcon, Info, LayoutDashboard } from 'lucide-react';
 
 export default function Relatorios() {
   const { transactions, items, language } = useAppStore();
@@ -78,6 +78,32 @@ export default function Relatorios() {
      .sort((a, b) => b.quantity - a.quantity)
      .slice(0, 5);
 
+    // Timeline Data (In vs Out vs Waste)
+    const dailyMap: Record<string, { in: number, out: number, waste: number }> = {};
+    filteredTransactions.forEach(t => {
+      const dateStr = t.date.split('T')[0];
+      if (!dailyMap[dateStr]) dailyMap[dateStr] = { in: 0, out: 0, waste: 0 };
+      
+      if (t.type === 'IN') dailyMap[dateStr].in += t.quantity;
+      else if (t.type === 'OUT') dailyMap[dateStr].out += t.quantity;
+      else if (t.type === 'WASTE') dailyMap[dateStr].waste += t.quantity;
+    });
+    
+    const dailyData = Object.entries(dailyMap)
+      .map(([date, data]) => ({ date: format(parseISO(date), 'dd/MM'), ...data }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    // Waste by Item (Pie Chart)
+    const wasteByItemRaw = filteredTransactions.filter(t => t.type === 'WASTE').reduce((acc, t) => {
+      acc[t.itemName] = (acc[t.itemName] || 0) + t.quantity;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const wasteData = Object.entries(wasteByItemRaw)
+      .map(([name, value]) => ({ name, value: Number(value) }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+
     // Global items count
     const totalItemsInStock = items.filter(item => item.quantity > 0).length;
 
@@ -87,37 +113,11 @@ export default function Relatorios() {
       outCount, 
       totalItemsInStock,
       topSoldGeneral,
-      avgDailyWaste
+      avgDailyWaste,
+      dailyData,
+      wasteData
     };
   }, [filteredTransactions, items, startDate, endDate]);
-
-  const exportToCSV = () => {
-    try {
-      const headers = [t('date'), t('type'), t('item'), t('quantity'), t('batchLabel'), t('notesLabel')];
-      const rows = filteredTransactions.map(tr => [
-        `"${format(parseISO(tr.date), 'dd/MM/yyyy HH:mm')}"`,
-        `"${tr.type}"`,
-        `"${tr.itemName.replace(/"/g, '""')}"`,
-        tr.quantity,
-        `"${(tr.batch || '').replace(/"/g, '""')}"`,
-        `"${(tr.notes || '').replace(/"/g, '""')}"`
-      ]);
-
-      const csvContent = [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      
-      link.setAttribute("href", url);
-      link.setAttribute("download", `cafemestre_relatorio_${startDate}_${endDate}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Failed to export CSV:', error);
-    }
-  };
 
   const handlePrint = () => {
     // Basic check for iframe environment
@@ -133,6 +133,8 @@ export default function Relatorios() {
     }, 100);
   };
 
+  const CHART_COLORS = ['#c6a87c', '#f44336', '#4caf50', '#2196f3', '#9c27b0'];
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-[24px] no-print">
@@ -142,17 +144,10 @@ export default function Relatorios() {
         </div>
         <div className="flex gap-2">
           <button 
-            onClick={exportToCSV}
-            className="flex items-center gap-2 bg-cafe-surface border border-cafe-border px-4 py-2 rounded-[6px] text-[13px] font-medium hover:border-cafe-accent transition-colors"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-cafe-success" />
-            {t('exportCSV')}
-          </button>
-          <button 
             onClick={handlePrint}
             className="flex items-center gap-2 bg-cafe-accent text-black px-4 py-2 rounded-[6px] text-[13px] font-bold hover:opacity-90 transition-opacity shadow-lg shadow-cafe-accent/20"
           >
-            <Printer className="w-4 h-4" />
+            <Download className="w-4 h-4" />
             {t('printReport')}
           </button>
         </div>
@@ -199,18 +194,90 @@ export default function Relatorios() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 min-h-[300px] bg-cafe-surface p-[24px] rounded-[8px] border border-cafe-border printable-card">
+          <h3 className="text-[16px] font-semibold mb-[24px] tracking-tight">{t('overview')} ({t('date')})</h3>
+          <div className="h-[220px]">
+             {metrics.dailyData.length > 0 ? (
+               <ResponsiveContainer width="99%" height={220}>
+                 <AreaChart data={metrics.dailyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                   <defs>
+                     <linearGradient id="colorIn" x1="0" y1="0" x2="0" y2="1">
+                       <stop offset="5%" stopColor={CHART_COLORS[2]} stopOpacity={0.8}/>
+                       <stop offset="95%" stopColor={CHART_COLORS[2]} stopOpacity={0}/>
+                     </linearGradient>
+                     <linearGradient id="colorOut" x1="0" y1="0" x2="0" y2="1">
+                       <stop offset="5%" stopColor={CHART_COLORS[3]} stopOpacity={0.8}/>
+                       <stop offset="95%" stopColor={CHART_COLORS[3]} stopOpacity={0}/>
+                     </linearGradient>
+                     <linearGradient id="colorWaste" x1="0" y1="0" x2="0" y2="1">
+                       <stop offset="5%" stopColor={CHART_COLORS[1]} stopOpacity={0.8}/>
+                       <stop offset="95%" stopColor={CHART_COLORS[1]} stopOpacity={0}/>
+                     </linearGradient>
+                   </defs>
+                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-cafe-border)" />
+                   <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: 'var(--color-cafe-text-dim)', fontSize: 11}} />
+                   <YAxis axisLine={false} tickLine={false} tick={{fill: 'var(--color-cafe-text-dim)', fontSize: 11}} />
+                   <Tooltip 
+                     contentStyle={{background: 'var(--color-cafe-surface)', border: '1px solid var(--color-cafe-border)', color: 'var(--color-cafe-text)', borderRadius: '6px'}}
+                     itemStyle={{fontSize: 12}}
+                   />
+                   <Legend iconType="circle" wrapperStyle={{fontSize: 12}} />
+                   <Area type="monotone" dataKey="in" name={t('transactionIn')} stroke={CHART_COLORS[2]} fillOpacity={1} fill="url(#colorIn)" />
+                   <Area type="monotone" dataKey="out" name={t('transactionOut')} stroke={CHART_COLORS[3]} fillOpacity={1} fill="url(#colorOut)" />
+                   <Area type="monotone" dataKey="waste" name={t('transactionWaste')} stroke={CHART_COLORS[1]} fillOpacity={1} fill="url(#colorWaste)" />
+                 </AreaChart>
+               </ResponsiveContainer>
+             ) : (
+                <div className="h-full flex items-center justify-center text-cafe-text-dim text-sm italic">{t('noRecentData')}</div>
+             )}
+          </div>
+        </div>
+
+        <div className="lg:col-span-1 min-h-[300px] bg-cafe-surface p-[24px] rounded-[8px] border border-cafe-border printable-card">
+          <h3 className="text-[16px] font-semibold mb-[24px] tracking-tight">{t('biggestWasteSources')}</h3>
+          <div className="h-[220px]">
+             {metrics.wasteData.length > 0 ? (
+               <ResponsiveContainer width="99%" height={220}>
+                 <PieChart>
+                   <Pie
+                     data={metrics.wasteData}
+                     cx="50%"
+                     cy="50%"
+                     innerRadius={60}
+                     outerRadius={80}
+                     paddingAngle={2}
+                     dataKey="value"
+                     stroke="none"
+                   >
+                     {metrics.wasteData.map((entry, index) => (
+                       <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                     ))}
+                   </Pie>
+                   <Tooltip 
+                     contentStyle={{background: 'var(--color-cafe-surface)', border: '1px solid var(--color-cafe-border)', color: 'var(--color-cafe-text)', borderRadius: '6px'}}
+                     itemStyle={{fontSize: 12}}
+                   />
+                   <Legend layout="horizontal" verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{fontSize: 11}} />
+                 </PieChart>
+               </ResponsiveContainer>
+             ) : (
+                <div className="h-full flex items-center justify-center text-cafe-text-dim text-sm italic">{t('noRecentData')}</div>
+             )}
+          </div>
+        </div>
+
         <div className="lg:col-span-1 min-h-[300px] bg-cafe-surface p-[24px] rounded-[8px] border border-cafe-border printable-card">
           <h3 className="text-[16px] font-semibold mb-[24px] tracking-tight">{t('topSoldGeneral')}</h3>
           <div className="h-[220px]">
             {metrics.topSoldGeneral.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={metrics.topSoldGeneral} layout="vertical" margin={{ left: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#333" />
-                  <XAxis type="number" hide />
-                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fill: '#888', fontSize: 11}} width={80} />
-                  <Tooltip cursor={{fill: '#222'}} contentStyle={{background: '#1A1A1A', border: '1px solid #333', color: '#fff'}} />
-                  <Bar dataKey="quantity" fill="var(--color-cafe-accent)" radius={[0, 2, 2, 0]} />
-                </BarChart>
+              <ResponsiveContainer width="99%" height={220}>
+               <BarChart data={metrics.topSoldGeneral} layout="vertical" margin={{ left: 20 }}>
+                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--color-cafe-border)" />
+                 <XAxis type="number" hide />
+                 <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fill: 'var(--color-cafe-text-dim)', fontSize: 11}} width={80} />
+                 <Tooltip cursor={{fill: 'var(--color-cafe-bg)'}} contentStyle={{background: 'var(--color-cafe-surface)', border: '1px solid var(--color-cafe-border)', color: 'var(--color-cafe-text)', borderRadius: '6px'}} />
+                 <Bar dataKey="quantity" fill="var(--color-cafe-accent)" radius={[0, 2, 2, 0]} />
+               </BarChart>
               </ResponsiveContainer>
             ) : (
                <div className="h-full flex items-center justify-center text-cafe-text-dim text-sm italic">{t('noRecentData')}</div>

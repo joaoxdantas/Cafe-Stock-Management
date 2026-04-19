@@ -173,7 +173,7 @@ export default function Dashboard() {
           </div>
           <div className="h-[240px] p-[20px]">
             {wasteData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="99%" height={240}>
                 <BarChart data={wasteData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-cafe-border)" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'var(--color-cafe-text-dim)', fontSize: 11}} />
